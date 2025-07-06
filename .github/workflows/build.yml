@@ -1,41 +1,60 @@
-name: Build OpenWRT MX4300 NSS
+name: Build OpenWRT for MX4300 NSS
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - 24.10-nss
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    name: Build MX4300 NSS Firmware
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential ccache ecj fastjar file g++ gawk \
-            gettext git java-propose-classpath libelf-dev libncurses5-dev libncursesw5-dev \
-            libssl-dev python3-distutils python3-pyelftools qemu-utils rsync unzip wget \
-            python3 python3-pip python3-setuptools python3-dev zlib1g-dev
+      - name: Set up cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            openwrt/tmp
+            openwrt/dl
+            openwrt/staging_dir
+          key: ${{ runner.os }}-openwrt-${{ hashFiles('**/.config.default') }}
 
-      - name: Prepare .config
+      - name: Prepare feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Copy default config
         run: |
           cp .config.default .config
           make defconfig
 
-      - name: Download sources
-        run: make download -j8
+      - name: Build firmware
+        run: |
+          make -j$(nproc)
 
-      - name: Compile firmware
-        run: make -j$(nproc)
+      - name: Upload firmware to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mx4300-nss-firmware
+          path: bin/targets/**/openwrt-*.bin
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/')
+        with:
+          name: "Auto Build - ${{ github.sha }}"
+          tag_name: "autobuild-${{ github.run_number }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload firmware to release
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag: mx4300-nss-${{ github.run_number }}
-          name: "MX4300 NSS Build #${{ github.run_number }}"
-          body: |
-            This is an automated MX4300 NSS build.
-            Built from commit: ${{ github.sha }}
-          artifacts: bin/targets/**/*-squashfs-sysupgrade.bin
+          files: bin/targets/**/*.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
