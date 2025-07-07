@@ -1,4 +1,4 @@
-name: Custom OpenWRT Build & Release
+name: OpenWrt NSS Build and Release
 
 on:
   push:
@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -17,44 +17,53 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install Dependencies
+      - name: Set up environment
         run: |
           sudo apt update
-          sudo apt install -y python3-setuptools zip unzip build-essential
+          sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget python3-pyelftools
 
-      - name: Build OpenWRT
-        run: |
-          make defconfig
-          make -j$(nproc)
-
-      - name: Archive Source Directory
-        run: |
-          zip -r openwrt-source.zip . -x '*.git*' '*bin/*' '*staging_dir/*'
-
-      - name: Upload Firmware Files as Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Cache build
+        uses: actions/cache@v4
         with:
-          name: openwrt-binaries
-          path: bin/targets/**/*.bin
+          path: |
+            openwrt/tmp
+            openwrt/staging_dir
+            openwrt/build_dir
+          key: ${{ runner.os }}-openwrt-nss-${{ hashFiles('**/.config') }}
 
-      - name: Upload Source Archive as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: openwrt-source
-          path: openwrt-source.zip
+      - name: Copy default config
+        run: cp .config.default .config
 
-      - name: Create Release
+      - name: Update & install feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Build OpenWrt (only image)
+        run: make -j$(nproc) download world
+
+      - name: Archive firmware files
+        run: |
+          mkdir -p release/firmware
+          find bin/targets/ -type f -name '*.bin' -exec cp {} release/firmware/ \;
+          find bin/targets/ -type f -name '*.img' -exec cp {} release/firmware/ \;
+
+      - name: Archive source code as zip
+        run: |
+          zip -r release/source.zip . -x ".git/*" -x "bin/*" -x "build_dir/*" -x "staging_dir/*" -x "tmp/*"
+
+      - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: release-${{ github.run_id }}
-          name: OpenWRT Custom Build (Run ${{ github.run_number }})
+          tag_name: auto-nss-${{ github.run_number }}
+          name: NSS Build ${{ github.run_number }}
           body: |
-            ✅ 자동 생성된 커스텀 빌드입니다.
-            - 빌드 번호: ${{ github.run_number }}
-            - 시간: ${{ github.event.head_commit.timestamp }}
-            - 태그: release-${{ github.run_id }}
-          files: |
-            bin/targets/**/*.bin
-            openwrt-source.zip
+            ✅ 자동 NSS 빌드 완료
+            - `factory.bin`, `sysupgrade.bin`, 기타 이미지 파일
+            - 소스코드 zip 파일 포함
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            release/firmware/*
+            release/source.zip
