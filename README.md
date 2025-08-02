@@ -2,6 +2,7 @@
 
 ```
 git clone https://github.com/BootLoopLover/qosmio -b 24.10-nss
+cd qosmio
 ```
 
 ```
