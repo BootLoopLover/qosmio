@@ -76,15 +76,13 @@ CONFIG_TARGET_qualcommax_ipq807x=y
 CONFIG_ATH11K_NSS_SUPPORT=y
 CONFIG_ATH11K_NSS_MESH_SUPPORT=y
 CONFIG_PACKAGE_MAC80211_NSS_SUPPORT=y
-CONFIG_PACKAGE_kmod-qca-nss-drv=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y
-CONFIG_PACKAGE_kmod-qca-nss-ecm=y
 
 # Additional NSS packages (VLAN, Multicast Snooping, etc)
 CONFIG_PACKAGE_kmod-qca-nss-drv-vlan-mgr=y
 CONFIG_PACKAGE_kmod-qca-mcs=y
 
 # NSS SQM Traffic Shaping
+CONFIG_PACKAGE_sqm-scripts=y
 CONFIG_PACKAGE_sqm-scripts-nss=y
 
 #####################################################################
@@ -100,6 +98,10 @@ CONFIG_TARGET_OPTIONS=y
 CONFIG_TARGET_OPTIMIZATION="-O2 -pipe -mcpu=cortex-a53+crc+crypto"
 CONFIG_USE_GC_SECTIONS=y
 
+# If your device supports USB and plan on installing packages via opkg
+# Use a USB device, as these devices have limited storage and you avoid wearing out the internal flash.
+# We update the PATH to include the USB device. '/opt' is a common mount point.
+CONFIG_TARGET_INIT_PATH="/usr/sbin:/usr/bin:/sbin:/bin:/opt/usr/bin:/opt/bin:/opt/sbin:/opt/usr/sbin"
 
 # Kernel Config
 CONFIG_COLLECT_KERNEL_DEBUG=y
@@ -147,8 +149,7 @@ CONFIG_ZSTD_OPTIMIZE_O3=y
 #####################################################################
 # Feeds Configuration
 #####################################################################
-# Prevent package manager from adding custom feeds as repositories in final image.
-# They don't exist upstream and will cause errors when trying to update
+# Prevent opkg from adding custom feeds to /etc/opkg/distfeeds.conf in the final image.
 CONFIG_FEED_nss_packages=n
 CONFIG_FEED_sqm_scripts_nss=n
 
@@ -166,8 +167,8 @@ CONFIG_PACKAGE_luci-ssl-openssl=y
 #####################################################################
 # - Firewall: Manage firewall rules via LUCI.
 CONFIG_PACKAGE_luci-app-firewall=y
-# - Package manager for OpenWRT, manage installed packages via LUCI.
-CONFIG_PACKAGE_luci-app-package-manager=y
+# - OPKG: Package manager for OpenWRT, manage installed packages via LUCI.
+CONFIG_PACKAGE_luci-app-opkg=y
 
 # - iperf3: CLI tool to measure network performance.
 #           This is essential to test WiFi speeds,
@@ -186,17 +187,17 @@ CONFIG_PACKAGE_iperf3=y
 #####################################################################
 
 # - SQM: Smart Queue Management for bufferbloat control.
-CONFIG_PACKAGE_luci-app-sqm=y
+# CONFIG_PACKAGE_luci-app-sqm=y
 # - Statistics: Monitor your router’s performance (CPU, memory, bandwidth).
-CONFIG_PACKAGE_luci-app-statistics=y
+# CONFIG_PACKAGE_luci-app-statistics=y
 # - ACME: Automated SSL cert management. If you want to access your router via HTTPS and have a domain.
-CONFIG_PACKAGE_luci-app-acme=y
+# CONFIG_PACKAGE_luci-app-acme=y
 # - Watchcat: Automate reboots on connection loss.
-CONFIG_PACKAGE_luci-app-watchcat=y
+# CONFIG_PACKAGE_luci-app-watchcat=y
 # - WireGuard: VPN support. Will also select the kernel module.
-CONFIG_PACKAGE_luci-proto-wireguard=y
+# CONFIG_PACKAGE_luci-proto-wireguard=y
 # - NLBWMon: Network usage monitoring to track bandwidth by host.
-CONFIG_PACKAGE_luci-app-nlbwmon=y
+# CONFIG_PACKAGE_luci-app-nlbwmon=y
 
 #####################################################################
 # Kernel Modules
@@ -242,4 +243,4 @@ CONFIG_PACKAGE_tcpdump=y
 # - htop: CLI tool to monitor system resource usage.
 CONFIG_PACKAGE_htop=y
 # lm-sensors isn't needed for IPQ807x devices.
-CONFIG_HTOP_LMSENSORS=n
+CONFIG_HTOP_LMSENSORS=y
