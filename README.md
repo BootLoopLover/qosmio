@@ -144,7 +144,7 @@ I personally maintain an NSS fork of OpenWrt [qosmio/openwrt-ipq](https://github
 NSS is available for most Qualcomm IPQ807x and IPQ6018 devices. If your device is part of this chipset family and supported in OpenWrt, it can run NSS.
 
 Supported devices include, but are not limited to:
-- Devices based on the **IPQ807x** (e.g., some high-end Netgear and TP-Link routers)
+- Devices based on the **IPQ807x** (e.g., some high-end Arcadyan AW1000/Netgear/TP-Link routers)
 - Devices based on the **IPQ6018** (e.g., certain enterprise routers)
 
 ---
